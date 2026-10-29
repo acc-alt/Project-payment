@@ -9,38 +9,42 @@
 :root{--bg:#f3f5f4;--card:#fff;--ink:#1d2b28;--mute:#6b7c78;--line:#dde4e2;--ac:#0f6b5c;--ac2:#e8f2ef;--red:#b3342b;--grn:#1d7a46}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
-header{background:var(--ac);color:#fff;padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header{background:var(--ac);color:#fff;padding:8px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 header h1{font-size:18px;margin:0 12px 0 0;letter-spacing:.05em}
 header button{background:transparent;color:#fff;border:0;border-bottom:2px solid transparent;border-radius:0;padding:4px 6px}
 header button.on{border-color:#fff}
 .sp{flex:1}
-main{max-width:1180px;margin:0 auto;padding:20px}
+main{width:100%;padding:12px 16px}
 button{font:inherit;background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer}
 button.ghost{background:var(--ac2);color:var(--ac)}
 button.del{background:#f8e6e4;color:var(--red)}
 button.sm{padding:2px 8px;font-size:13px}
 input,select,textarea{font:inherit;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff}
 :focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
-.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px}
 .c small{color:var(--mute);display:block}
-.c b{font-size:24px;font-variant-numeric:tabular-nums}
+.c b{font-size:22px;font-variant-numeric:tabular-nums}
 .c.big{border-left:5px solid var(--ac)}
 .red{color:var(--red)}.grn{color:var(--grn)}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:20px;overflow-x:auto}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px}
 .panel h3{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:10px}
-table{border-collapse:collapse;width:100%;white-space:nowrap}
-th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td.n,th.n{white-space:nowrap}
+td:last-child{white-space:nowrap}
+.two{display:grid;gap:0 12px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:1500px){.two{grid-template-columns:1fr 1fr}}
+th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
 th{color:var(--mute);font-weight:500;font-size:13px}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 tr.row{cursor:pointer}tr.row:hover{background:var(--ac2)}
 .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.filters{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .filters input{flex:2;min-width:220px}.filters select{flex:1;min-width:120px}
-.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 20px}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 20px}
 .info span{color:var(--mute);font-size:13px;display:block}
 #modal{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
-#modal .box{background:#fff;border-radius:10px;padding:20px;width:min(640px,100%);max-height:92vh;overflow:auto}
+#modal .box{background:#fff;border-radius:10px;padding:20px;width:min(760px,100%);max-height:92vh;overflow:auto}
 .box h3{margin:0 0 14px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 .grid label{font-size:13px;color:var(--mute)}.grid label.w{grid-column:1/-1}
@@ -126,8 +130,8 @@ function overview(){
   return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案。</p>
   <div class="cards">${card('工案數量',P.length)}${card('總工案金額（含稅）',S(P))}${card('已收金額',R(P),'grn')}${card('未收金額',S(P)-R(P),'red')}</div>
   <div class="cards"><div class="c"><small>未稅總額合計</small><b>${f$(net)}</b></div></div>
-  <div class="panel"><h3>依接案公司<small style="color:var(--mute);font-weight:400">點公司名稱，可看各案件類別的金額</small></h3><table>${head('接案公司')}${co}</table></div>
-  <div class="panel"><h3>依案件類別</h3><table>${head('案件類別')}${ct}</table></div>`}
+  <div class="two"><div class="panel"><h3>依接案公司<small style="color:var(--mute);font-weight:400">點公司名稱，可看各案件類別的金額</small></h3><table>${head('接案公司')}${co}</table></div>
+  <div class="panel"><h3>依案件類別</h3><table>${head('案件類別')}${ct}</table></div></div>`}
 
 function deposit(){
   const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
@@ -159,10 +163,10 @@ function detail(){
   <div class="cards">${card('工程總額（含稅）',s.t)}${card('已收總額',s.r,'grn')}${card('未收總額',s.u,'red')}</div>
   <div class="panel"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}')">刪除</button></h3>
   <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
-  <div class="panel"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th></th></tr>
+  <div class="two"><div class="panel"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th></th></tr>
   ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="8">尚未設定分期</td></tr>'}</table></div>
   <div class="panel"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th></th></tr>
-  ${Y.map(y=>`<tr><td>${e(y.date)}</td><td>${e(y.method)}</td><td>${e(inv(y.iid))}</td><td>${y.method=='支票'?e(y.check):y.method=='網銀'?e(y.bank+' '+y.branch):''}</td><td>${e(y.voucher)}</td><td class="n">${f$(y.amount)}</td><td><button class="ghost sm" onclick="editY('${p.id}','${y.id}')">編輯</button> <button class="del sm" onclick="rm('Payments','${y.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">尚無收款</td></tr>'}</table></div>`}
+  ${Y.map(y=>`<tr><td>${e(y.date)}</td><td>${e(y.method)}</td><td>${e(inv(y.iid))}</td><td>${y.method=='支票'?e(y.check):y.method=='網銀'?e(y.bank+' '+y.branch):''}</td><td>${e(y.voucher)}</td><td class="n">${f$(y.amount)}</td><td><button class="ghost sm" onclick="editY('${p.id}','${y.id}')">編輯</button> <button class="del sm" onclick="rm('Payments','${y.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">尚無收款</td></tr>'}</table></div></div>`}
 
 /* ---------- 表單 ---------- */
 function closeM(){$('#modal').hidden=true}
