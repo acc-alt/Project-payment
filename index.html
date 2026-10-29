@@ -39,6 +39,24 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .panel h3{margin:0;padding:10px 14px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;background:#f7f9fc;border-bottom:1px solid var(--line)}
 .panel h3 small{font-size:12.5px;color:var(--mute);font-weight:400}
 .panel>.info{padding:12px 14px}
+/* 區塊邊框、陰影與分色 */
+.panel,.c{border-color:#c5d0dc;box-shadow:0 1px 2px rgba(16,40,70,.08),0 3px 8px rgba(16,40,70,.05)}
+.panel h3{border-bottom-color:#d3dce6}
+.p-info{border-top:4px solid var(--navy)}
+.p-inst{border-color:#8fb0d1;border-top:4px solid #2a5c8f}
+.p-inst h3{background:#e4eef8;color:#1b4469;border-bottom-color:#b9d0e6}
+.p-inst th{background:#f2f7fc}
+.p-pay{border-color:#91c4a8;border-top:4px solid #1f7a4d}
+.p-pay h3{background:#e2f2e9;color:#16583a;border-bottom-color:#b4dcc4}
+.p-pay th{background:#f1f9f4}
+.p-pay h3 button:not(.ghost):not(.del){background:#1f7a4d}
+.p-pay h3 button:not(.ghost):not(.del):hover{background:#18623e}
+/* 內容過寬或過長時，在框格內出現捲軸 */
+.sc{overflow:auto;max-height:70vh}
+.sc table{min-width:760px}
+.sc table:has(#tb){min-width:1100px}
+.p-inst .sc table{min-width:920px}
+th{position:sticky;top:0;z-index:1}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{padding:7px 12px;border-bottom:1px solid #eaeff4;text-align:left;vertical-align:middle}
 th{color:var(--mute);font-weight:600;font-size:12.5px;background:#fbfcfe;border-bottom:1px solid var(--line)}
@@ -140,15 +158,15 @@ function overview(){
   return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案。</p>
   <div class="cards">${card('工案數量',P.length)}${card('總工案金額（含稅）',S(P))}${card('已收金額',R(P),'grn')}${card('未收金額',S(P)-R(P),'red')}</div>
   <div class="cards"><div class="c"><small>未稅總額合計</small><b>${f$(net)}</b></div></div>
-  <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><table>${head('接案公司')}${co}</table></div>
-  <div class="panel"><h3>依案件類別</h3><table>${head('案件類別')}${ct}</table></div></div>`}
+  <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><div class="sc"><table>${head('接案公司')}${co}</table></div></div>
+  <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
 function deposit(){
   const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0);
   return`<div class="cards">${card('預收款工案數',a.length)}${card('已收金額（尚未沖預收）',r,'grn')}${card('工案總額',t)}${card('未收金額',t-r,'red')}</div>
-  <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案</small></h3><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
-  ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div>`}
+  <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
+  ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div></div>`}
 
 function list(){
   const A=tab=='a';
@@ -156,7 +174,7 @@ function list(){
   <select id="fc" onchange="FC=this.value;rows()"><option value="">全部類別</option>${CAT.map(c=>`<option ${FC==c?'selected':''} value="${c}">${c} 類</option>`).join('')}</select>
   <select id="fo" onchange="FO=this.value;rows()"><option value="">全部公司</option>${CO.map(c=>`<option ${FO==c?'selected':''}>${c}</option>`).join('')}</select>
   ${A?'':'<button onclick="editP()">＋ 新增工案</button>'}</div>
-  <div class="panel"><table><thead><tr>${A?'<th>結案日期</th>':''}<th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr></thead><tbody id="tb"></tbody></table></div>`}
+  <div class="panel"><div class="sc"><table><thead><tr>${A?'<th>結案日期</th>':''}<th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>`}
 function blob(p){
   return[p.name,p.title,p.taxid,p.insurance,p.remark,p.company,...insts(p.id).flatMap(i=>[i.invNo,i.voucher,i.progress,i.remark]),...pays(p.id).flatMap(y=>[y.voucher,y.check,y.bank,y.branch])].join(' ').toLowerCase()}
 function rows(){
@@ -171,11 +189,11 @@ function detail(){
   const inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
   return`<p><button class="ghost" onclick="go(tab)">← 回列表</button></p>
   <div class="cards">${card('工程總額（含稅）',s.t)}${card('已收總額',s.r,'grn')}${card('未收總額',s.u,'red')}</div>
-  <div class="panel"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}')">刪除</button></h3>
+  <div class="panel p-info"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}')">刪除</button></h3>
   <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
-  <div class="two"><div class="panel"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th>備註</th><th></th></tr>
-  ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td>${i.remark?`<button class="sm ghost" onclick="viewRemark('${i.id}')">檢視</button>`:''}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="9">尚未設定分期</td></tr>'}</table></div>
-  <div class="panel"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th></th></tr>
+  <div class="panel p-inst"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><div class="sc"><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th>備註</th><th></th></tr>
+  ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td>${i.remark?`<button class="sm ghost" onclick="viewRemark('${i.id}')">檢視</button>`:''}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="9">尚未設定分期</td></tr>'}</table></div></div>
+  <div class="panel p-pay"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><div class="sc"><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th></th></tr>
   ${Y.map(y=>`<tr><td>${e(y.date)}</td><td>${e(y.method)}</td><td>${e(inv(y.iid))}</td><td>${y.method=='支票'?e(y.check):y.method=='網銀'?e(y.bank+' '+y.branch):''}</td><td>${e(y.voucher)}</td><td class="n">${f$(y.amount)}</td><td><button class="ghost sm" onclick="editY('${p.id}','${y.id}')">編輯</button> <button class="del sm" onclick="rm('Payments','${y.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">尚無收款</td></tr>'}</table></div></div>`}
 
 /* ---------- 表單 ---------- */
