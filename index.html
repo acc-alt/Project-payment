@@ -6,55 +6,65 @@
 <title>工案款項追蹤系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#f3f5f4;--card:#fff;--ink:#1d2b28;--mute:#6b7c78;--line:#dde4e2;--ac:#0f6b5c;--ac2:#e8f2ef;--red:#b3342b;--grn:#1d7a46}
+:root{--bg:#eef1f5;--card:#fff;--ink:#1c2733;--mute:#66768a;--line:#dfe5ec;--navy:#16273b;--ac:#2a5c8f;--ac2:#e9f0f7;--red:#b4382f;--grn:#1f7a4d;--row:#f6f9fc}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
-header{background:var(--ac);color:#fff;padding:8px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-header h1{font-size:18px;margin:0 12px 0 0;letter-spacing:.05em}
-header button{background:transparent;color:#fff;border:0;border-bottom:2px solid transparent;border-radius:0;padding:4px 6px}
-header button.on{border-color:#fff}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+header{background:var(--navy);color:#cfd9e6;padding:0 20px;display:flex;gap:4px;align-items:stretch;flex-wrap:wrap;box-shadow:0 1px 0 #0c1827}
+header h1{font-size:16px;font-weight:700;color:#fff;margin:0 22px 0 0;letter-spacing:.08em;display:flex;align-items:center;padding:12px 0}
+header h1::before{content:"";width:4px;height:18px;background:#d1a24a;margin-right:10px;border-radius:1px}
+header button{background:transparent;color:#a9b9cc;border:0;border-bottom:3px solid transparent;border-radius:0;padding:14px 14px 11px;font-size:14px}
+header button:hover{color:#fff}
+header button.on{color:#fff;border-bottom-color:#d1a24a;font-weight:600}
+header button.ghost{background:rgba(255,255,255,.08);color:#dbe5f0;border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:5px 12px;margin:9px 0 9px 8px;font-size:13px}
+header button.ghost:hover{background:rgba(255,255,255,.16)}
+#msg{align-self:center;font-size:13px;color:#d1a24a}
 .sp{flex:1}
-main{width:100%;padding:12px 16px}
-button{font:inherit;background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer}
-button.ghost{background:var(--ac2);color:var(--ac)}
-button.del{background:#f8e6e4;color:var(--red)}
-button.sm{padding:2px 8px;font-size:13px}
-input,select,textarea{font:inherit;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff}
-:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px}
-.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px}
-.c small{color:var(--mute);display:block}
-.c b{font-size:22px;font-variant-numeric:tabular-nums}
-.c.big{border-left:5px solid var(--ac)}
+main{width:100%;padding:14px 20px 28px}
+button{font:inherit;background:var(--ac);color:#fff;border:1px solid transparent;border-radius:5px;padding:6px 14px;cursor:pointer;transition:background .15s}
+button:hover{background:#224d79}
+button.ghost{background:#fff;color:var(--ac);border-color:#c6d4e3}
+button.ghost:hover{background:var(--ac2)}
+button.del{background:#fff;color:var(--red);border-color:#e6c6c3}
+button.del:hover{background:#fbeeed}
+button.sm{padding:2px 9px;font-size:13px}
+input,select,textarea{font:inherit;width:100%;padding:6px 9px;border:1px solid #cdd7e2;border-radius:5px;background:#fff;color:var(--ink)}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(42,92,143,.15)}
+button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.c{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:6px;padding:10px 16px}
+.c small{color:var(--mute);display:block;font-size:12.5px;margin-bottom:2px}
+.c b{font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .red{color:var(--red)}.grn{color:var(--grn)}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px}
-.panel h3{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:10px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:0 0 4px;margin-bottom:14px;overflow:hidden}
+.panel h3{margin:0;padding:10px 14px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px;background:#f7f9fc;border-bottom:1px solid var(--line)}
+.panel h3 small{font-size:12.5px;color:var(--mute);font-weight:400}
+.panel>.info{padding:12px 14px}
 table{border-collapse:collapse;width:100%;font-size:14px}
-td.n,th.n{white-space:nowrap}
+th,td{padding:7px 12px;border-bottom:1px solid #eaeff4;text-align:left;vertical-align:middle}
+th{color:var(--mute);font-weight:600;font-size:12.5px;background:#fbfcfe;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td:last-child{white-space:nowrap}
-.two{display:grid;gap:0 12px;grid-template-columns:minmax(0,1fr)}
+tr.row{cursor:pointer}tr.row:hover td{background:var(--row)}
+.sub td{background:var(--ac2);font-size:13.5px}
+.two{display:grid;gap:0 14px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:1500px){.two{grid-template-columns:1fr 1fr}}
-th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}
-th{color:var(--mute);font-weight:500;font-size:13px}
-td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-tr.row{cursor:pointer}tr.row:hover{background:var(--ac2)}
-.bar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.filters{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.bar{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.filters{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .filters input{flex:2;min-width:220px}.filters select{flex:1;min-width:120px}
-.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:4px 20px}
-.info span{color:var(--mute);font-size:13px;display:block}
-#modal{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
-#modal .box{background:#fff;border-radius:10px;padding:20px;width:min(760px,100%);max-height:92vh;overflow:auto}
-.box h3{margin:0 0 14px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
-.grid label{font-size:13px;color:var(--mute)}.grid label.w{grid-column:1/-1}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 24px}
+.info span{color:var(--mute);font-size:12.5px;display:block}
+#modal{position:fixed;inset:0;background:rgba(16,28,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+#modal .box{background:#fff;border-radius:8px;padding:22px 24px;width:min(760px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.box h3{margin:0 0 16px;font-size:17px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.grid label{font-size:12.5px;color:var(--mute);font-weight:500}.grid label.w{grid-column:1/-1}
+.grid input,.grid select,.grid textarea{margin-top:3px;color:var(--ink);font-size:14px}
 [hidden]{display:none!important}
-.tag{padding:1px 8px;border-radius:10px;background:var(--ac2);color:var(--ac);font-size:12px}
+.tag{padding:1px 9px;border-radius:3px;background:var(--ac2);color:var(--ac);font-size:12px;font-weight:600}
 .tag.ok{background:var(--grn);color:#fff}
-.sm.ok{background:var(--grn)}
-.sub td{background:var(--ac2)}
-.warn{background:#fff6dd;border:1px solid #ecd78a;padding:8px 12px;border-radius:6px;margin-bottom:14px;font-size:14px}
-@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.warn{background:#fdf6e3;border:1px solid #e8d49a;border-left:4px solid #d1a24a;padding:8px 14px;border-radius:4px;margin-bottom:14px;font-size:13.5px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}header h1{width:100%}}
 </style>
 </head>
 <body>
@@ -130,14 +140,14 @@ function overview(){
   return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案。</p>
   <div class="cards">${card('工案數量',P.length)}${card('總工案金額（含稅）',S(P))}${card('已收金額',R(P),'grn')}${card('未收金額',S(P)-R(P),'red')}</div>
   <div class="cards"><div class="c"><small>未稅總額合計</small><b>${f$(net)}</b></div></div>
-  <div class="two"><div class="panel"><h3>依接案公司<small style="color:var(--mute);font-weight:400">點公司名稱，可看各案件類別的金額</small></h3><table>${head('接案公司')}${co}</table></div>
+  <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><table>${head('接案公司')}${co}</table></div>
   <div class="panel"><h3>依案件類別</h3><table>${head('案件類別')}${ct}</table></div></div>`}
 
 function deposit(){
   const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0);
   return`<div class="cards">${card('預收款工案數',a.length)}${card('已收金額（尚未沖預收）',r,'grn')}${card('工案總額',t)}${card('未收金額',t-r,'red')}</div>
-  <div class="panel"><h3>預收款統計<small style="color:var(--mute);font-weight:400">尚未按「已收款已沖預收」的工案</small></h3><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
+  <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案</small></h3><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
   ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div>`}
 
 function list(){
