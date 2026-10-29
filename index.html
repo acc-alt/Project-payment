@@ -149,15 +149,13 @@ function reopen(id){confirm('要取消結案，並移回工案列表嗎？')&&sa
 const pickCo=i=>{selCo=selCo==i?-1:i;show()};
 
 function overview(){
-  const P=D.Projects.filter(p=>!p.closeDate).map(p=>({p,...stat(p)})),S=a=>a.reduce((s,x)=>s+x.t,0),R=a=>a.reduce((s,x)=>s+x.r,0);
+  const P=D.Projects.filter(p=>!p.closeDate).map(p=>({p,...statNet(p)})),S=a=>a.reduce((s,x)=>s+x.t,0),R=a=>a.reduce((s,x)=>s+x.r,0);
   const cells=a=>`<td class="n">${a.length}</td><td class="n">${f$(S(a))}</td><td class="n">${f$(R(a))}</td><td class="n red">${f$(S(a)-R(a))}</td>`;
-  const head=t=>`<tr><th>${t}</th><th class="n">件數</th><th class="n">工案總額</th><th class="n">已收</th><th class="n">未收</th></tr>`;
+  const head=t=>`<tr><th>${t}</th><th class="n">件數</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th></tr>`;
   const co=CO.map((c,i)=>{const a=P.filter(x=>x.p.company==c);return`<tr class="row" onclick="pickCo(${i})"><td>${selCo==i?'▼':'▶'} ${e(c)}</td>${cells(a)}</tr>`+(selCo==i?CAT.map(k=>`<tr class="sub"><td style="padding-left:32px">${k} 類</td>${cells(a.filter(x=>x.p.cat==k))}</tr>`).join(''):'')}).join('');
   const ct=CAT.map(k=>`<tr><td>${k} 類</td>${cells(P.filter(x=>x.p.cat==k))}</tr>`).join('');
-  const net=P.reduce((s,x)=>s+n0(x.p.net),0);
-  return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案。</p>
-  <div class="cards">${card('工案數量',P.length)}${card('總工案金額（含稅）',S(P))}${card('已收金額',R(P),'grn')}${card('未收金額',S(P)-R(P),'red')}</div>
-  <div class="cards"><div class="c"><small>未稅總額合計</small><b>${f$(net)}</b></div></div>
+  return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案，金額皆為未稅。</p>
+  <div class="cards">${card('工案數量',P.length)}${card('總工案金額（未稅）',S(P))}${card('已收金額（未稅）',R(P),'grn')}${card('未收金額（未稅）',S(P)-R(P),'red')}</div>
   <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><div class="sc"><table>${head('接案公司')}${co}</table></div></div>
   <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
@@ -187,13 +185,13 @@ function list(){
   <select id="fc" onchange="FC=this.value;rows()"><option value="">全部類別</option>${CAT.map(c=>`<option ${FC==c?'selected':''} value="${c}">${c} 類</option>`).join('')}</select>
   <select id="fo" onchange="FO=this.value;rows()"><option value="">全部公司</option>${CO.map(c=>`<option ${FO==c?'selected':''}>${c}</option>`).join('')}</select>
   ${A?'':'<button onclick="editP()">＋ 新增工案</button>'}</div>
-  <div class="panel"><div class="sc"><table><thead><tr>${A?'<th>結案日期</th>':''}<th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>`}
+  <div class="panel"><div class="sc"><table><thead><tr>${A?'<th>結案日期</th>':''}<th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>`}
 function blob(p){
   return[p.name,p.title,p.taxid,p.insurance,p.remark,p.company,...insts(p.id).flatMap(i=>[i.invNo,i.voucher,i.progress,i.remark]),...pays(p.id).flatMap(y=>[y.voucher,y.check,y.bank,y.branch,y.remark])].join(' ').toLowerCase()}
 function rows(){
   const A=tab=='a',q=Q.trim().toLowerCase();
   const a=D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>A?y.closeDate.localeCompare(x.closeDate):y.date.localeCompare(x.date));
-  $('#tb').innerHTML=a.map(p=>{const s=stat(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'尚無結案封存的工案。':'沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
+  $('#tb').innerHTML=a.map(p=>{const s=statNet(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'尚無結案封存的工案。':'沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
 const open1=id=>{cur=id;show();scrollTo(0,0)};
 
 function detail(){
@@ -263,7 +261,7 @@ function setup(){
 function exportXls(){
   const pn=id=>(D.Projects.find(p=>p.id==id)||{}).name||'',inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
   const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),n);
-  add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
+  add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,'已收金額(未稅)':statNet(p).r,'未收金額(未稅)':statNet(p).u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
   add('分期明細',D.Installments.map(i=>({工案名稱:pn(i.pid),款項進度:i.progress||'',發票日期:i.invDate,發票號碼:i.invNo,未稅金額:n0(i.net),稅額:n0(i.tax),總額:n0(i.total),傳票資訊:i.voucher,備註:i.remark||''})));
   add('收款紀錄',D.Payments.map(y=>({工案名稱:pn(y.pid),收款日期:y.date,付款方式:y.method,對應發票:inv(y.iid),支票資訊:y.check,銀行:y.bank,分行:y.branch,傳票號碼:y.voucher,收款金額:n0(y.amount),備註:y.remark||''})));
   const dep=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const s=statNet(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,未稅總額:s.t,'已收金額(未稅)':s.r,'未收金額(未稅)':s.u}});
