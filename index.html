@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工案款項追蹤系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f3f5f4;--card:#fff;--ink:#1d2b28;--mute:#6b7c78;--line:#dde4e2;--ac:#0f6b5c;--ac2:#e8f2ef;--red:#b3342b;--grn:#1d7a46}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+header{background:var(--ac);color:#fff;padding:12px 20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+header h1{font-size:18px;margin:0 12px 0 0;letter-spacing:.05em}
+header button{background:transparent;color:#fff;border:0;border-bottom:2px solid transparent;border-radius:0;padding:4px 6px}
+header button.on{border-color:#fff}
+.sp{flex:1}
+main{max-width:1180px;margin:0 auto;padding:20px}
+button{font:inherit;background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 14px;cursor:pointer}
+button.ghost{background:var(--ac2);color:var(--ac)}
+button.del{background:#f8e6e4;color:var(--red)}
+button.sm{padding:2px 8px;font-size:13px}
+input,select,textarea{font:inherit;width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:20px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.c small{color:var(--mute);display:block}
+.c b{font-size:24px;font-variant-numeric:tabular-nums}
+.c.big{border-left:5px solid var(--ac)}
+.red{color:var(--red)}.grn{color:var(--grn)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:20px;overflow-x:auto}
+.panel h3{margin:0 0 10px;font-size:16px;display:flex;align-items:center;gap:10px}
+table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mute);font-weight:500;font-size:13px}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.row{cursor:pointer}tr.row:hover{background:var(--ac2)}
+.bar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.filters input{flex:2;min-width:220px}.filters select{flex:1;min-width:120px}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 20px}
+.info span{color:var(--mute);font-size:13px;display:block}
+#modal{position:fixed;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+#modal .box{background:#fff;border-radius:10px;padding:20px;width:min(640px,100%);max-height:92vh;overflow:auto}
+.box h3{margin:0 0 14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.grid label{font-size:13px;color:var(--mute)}.grid label.w{grid-column:1/-1}
+[hidden]{display:none!important}
+.tag{padding:1px 8px;border-radius:10px;background:var(--ac2);color:var(--ac);font-size:12px}
+.warn{background:#fff6dd;border:1px solid #ecd78a;padding:8px 12px;border-radius:6px;margin-bottom:14px;font-size:14px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>工案款項追蹤</h1>
+  <button id="t_o" onclick="go('o')">總覽</button>
+  <button id="t_l" onclick="go('l')">工案列表</button>
+  <span class="sp"></span>
+  <span id="msg"></span>
+  <button class="ghost" onclick="exportXls()">匯出 Excel</button>
+  <button class="ghost" onclick="setup()">連線設定</button>
+</header>
+<main id="v"></main>
+<div id="modal" hidden></div>
+
+<script>
+const $=s=>document.querySelector(s),n0=v=>Number(v)||0,f$=v=>n0(v).toLocaleString('zh-TW');
+const e=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const CAT=['A','B','C','D'],CO=['何鑫實業','薪昌'],METH=['支票','網銀','現金'];
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const today=()=>new Date().toLocaleDateString('sv');
+let cfg={};try{cfg=JSON.parse(localStorage.getItem('cfg')||'{}')}catch(x){}
+let D={Projects:[],Installments:[],Payments:[]},cur=null,tab='o',Q='',FC='',FO='';
+
+/* ---------- 資料層：有填網址就存 Google Sheet，否則存瀏覽器（僅供測試） ---------- */
+async function call(o){
+  if(!cfg.url){
+    let db;try{db=JSON.parse(localStorage.getItem('db'))}catch(x){}
+    db=db||{Projects:[],Installments:[],Payments:[]};
+    if(o.action=='save'){const a=db[o.sheet],k=a.findIndex(x=>x.id==o.row.id);k<0?a.push(o.row):a[k]=o.row}
+    if(o.action=='del'){
+      if(o.sheet=='Projects'){db.Installments=db.Installments.filter(x=>x.pid!=o.id);db.Payments=db.Payments.filter(x=>x.pid!=o.id)}
+      db[o.sheet]=db[o.sheet].filter(x=>x.id!=o.id)}
+    localStorage.setItem('db',JSON.stringify(db));return db}
+  const r=await fetch(cfg.url,{method:'POST',body:JSON.stringify({...o,key:cfg.key})});
+  const j=await r.json();if(j.error)throw j.error;return j}
+async function run(o){
+  $('#msg').textContent='處理中…';
+  try{D=await call(o)}catch(x){alert('操作失敗：'+x+'\n請檢查「連線設定」')}
+  $('#msg').textContent='';show()}
+const save=(sheet,row)=>run({action:'save',sheet,row});
+const rm=(sheet,id)=>confirm('確定要刪除嗎？'+(sheet=='Projects'?'\n此工案的分期與收款紀錄也會一併刪除。':''))&&run({action:'del',sheet,id});
+
+/* ---------- 計算 ---------- */
+const insts=id=>D.Installments.filter(x=>x.pid==id),pays=id=>D.Payments.filter(x=>x.pid==id);
+const stat=p=>{const r=pays(p.id).reduce((s,y)=>s+n0(y.amount),0);return{t:n0(p.gross),r,u:n0(p.gross)-r}};
+
+/* ---------- 版面 ---------- */
+function go(t){tab=t;cur=null;show()}
+function show(){
+  $('#t_o').className=tab=='o'&&!cur?'on':'';$('#t_l').className=tab=='l'||cur?'on':'';
+  $('#v').innerHTML=(cfg.url?'':'<div class="warn">目前為「本機測試模式」，資料只存在這台瀏覽器。請按右上角「連線設定」填入 Google Apps Script 網址，才會存進 Google Sheet。</div>')+
+    (cur?detail():tab=='o'?overview():list());
+  if(!cur&&tab=='l')rows()}
+
+function card(t,v,cls=''){return`<div class="c big"><small>${t}</small><b class="${cls}">${f$(v)}</b></div>`}
+function overview(){
+  const P=D.Projects.map(p=>({p,...stat(p)})),S=a=>a.reduce((s,x)=>s+x.t,0),R=a=>a.reduce((s,x)=>s+x.r,0);
+  const grp=(title,keys,k,fmt)=>`<div class="panel"><h3>${title}</h3><table><tr><th>${title.slice(2)}</th><th class="n">件數</th><th class="n">工案總額</th><th class="n">已收</th><th class="n">未收</th></tr>${keys.map(c=>{const a=P.filter(x=>x.p[k]==c);return`<tr><td>${fmt(c)}</td><td class="n">${a.length}</td><td class="n">${f$(S(a))}</td><td class="n">${f$(R(a))}</td><td class="n red">${f$(S(a)-R(a))}</td></tr>`}).join('')}</table></div>`;
+  const net=D.Projects.reduce((s,p)=>s+n0(p.net),0);
+  return`<div class="cards">${card('工案數量',P.length)}${card('總工案金額（含稅）',S(P))}${card('已收金額',R(P),'grn')}${card('未收金額',S(P)-R(P),'red')}</div>
+  <div class="cards"><div class="c"><small>未稅總額合計</small><b>${f$(net)}</b></div></div>
+  ${grp('依接案公司',CO,'company',x=>e(x))}${grp('依案件類別',CAT,'cat',x=>x+' 類')}`}
+
+function list(){
+  return`<div class="filters"><input id="q" placeholder="搜尋：工案名稱、客戶、統編、發票號碼、傳票、備註…" value="${e(Q)}" oninput="Q=this.value;rows()">
+  <select id="fc" onchange="FC=this.value;rows()"><option value="">全部類別</option>${CAT.map(c=>`<option ${FC==c?'selected':''} value="${c}">${c} 類</option>`).join('')}</select>
+  <select id="fo" onchange="FO=this.value;rows()"><option value="">全部公司</option>${CO.map(c=>`<option ${FO==c?'selected':''}>${c}</option>`).join('')}</select>
+  <button onclick="editP()">＋ 新增工案</button></div>
+  <div class="panel"><table><thead><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th></tr></thead><tbody id="tb"></tbody></table></div>`}
+function blob(p){
+  return[p.name,p.title,p.taxid,p.insurance,p.remark,p.company,...insts(p.id).flatMap(i=>[i.invNo,i.voucher,i.progress]),...pays(p.id).flatMap(y=>[y.voucher,y.check,y.bank,y.branch])].join(' ').toLowerCase()}
+function rows(){
+  const q=Q.trim().toLowerCase();
+  const a=D.Projects.filter(p=>(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((a,b)=>b.date.localeCompare(a.date));
+  $('#tb').innerHTML=a.map(p=>{const s=stat(p);return`<tr class="row" onclick="open1('${p.id}')"><td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td></tr>`}).join('')||'<tr><td colspan="9">沒有符合的工案。按右上「＋ 新增工案」開始建立。</td></tr>'}
+const open1=id=>{cur=id;show();scrollTo(0,0)};
+
+function detail(){
+  const p=D.Projects.find(x=>x.id==cur);if(!p){cur=null;return list()}
+  const s=stat(p),I=insts(p.id).sort((a,b)=>a.invDate.localeCompare(b.invDate)),Y=pays(p.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
+  return`<p><button class="ghost" onclick="go('l')">← 回列表</button></p>
+  <div class="cards">${card('工程總額（含稅）',s.t)}${card('已收總額',s.r,'grn')}${card('未收總額',s.u,'red')}</div>
+  <div class="panel"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}');cur=null">刪除</button></h3>
+  <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
+  <div class="panel"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th></th></tr>
+  ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="8">尚未設定分期</td></tr>'}</table></div>
+  <div class="panel"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th></th></tr>
+  ${Y.map(y=>`<tr><td>${e(y.date)}</td><td>${e(y.method)}</td><td>${e(inv(y.iid))}</td><td>${y.method=='支票'?e(y.check):y.method=='網銀'?e(y.bank+' '+y.branch):''}</td><td>${e(y.voucher)}</td><td class="n">${f$(y.amount)}</td><td><button class="ghost sm" onclick="editY('${p.id}','${y.id}')">編輯</button> <button class="del sm" onclick="rm('Payments','${y.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="7">尚無收款</td></tr>'}</table></div>`}
+
+/* ---------- 表單 ---------- */
+function closeM(){$('#modal').hidden=true}
+function form(title,F,v,onSave,hook){
+  const opt=o=>Array.isArray(o)?`<option value="${e(o[0])}">${e(o[1])}</option>`:`<option>${e(o)}</option>`;
+  $('#modal').innerHTML=`<div class="box"><h3>${title}</h3><div class="grid">${F.map(f=>`<label class="${f.w?'w':''}" data-k="${f.k}">${f.l}${f.r?' *':''}${f.t=='select'?`<select id="f_${f.k}">${f.o.map(opt).join('')}</select>`:f.t=='area'?`<textarea id="f_${f.k}" rows="2"></textarea>`:`<input id="f_${f.k}" type="${f.t||'text'}" ${f.t=='number'?'step="any"':''}>`}</label>`).join('')}</div>
+  <div class="bar"><button class="ghost" onclick="closeM()">取消</button><button id="ok">儲存</button></div></div>`;
+  $('#modal').hidden=false;
+  F.forEach(f=>$('#f_'+f.k).value=v[f.k]??'');
+  const get=()=>Object.fromEntries(F.map(f=>[f.k,$('#f_'+f.k).value])),set=(k,x)=>$('#f_'+k).value=x;
+  const upd=ev=>{if(ev&&hook)hook(get(),ev.target.id.slice(2),set);const g=get();F.forEach(f=>{if(f.s)$(`[data-k="${f.k}"]`).hidden=g[f.s[0]]!=f.s[1]})};
+  $('#modal .grid').oninput=upd;$('#modal .grid').onchange=upd;upd();
+  $('#ok').onclick=()=>{const g=get(),m=F.find(f=>f.r&&!g[f.k].trim());if(m)return alert('請填寫：'+m.l);closeM();onSave(g)}}
+
+function editP(id){
+  const v=D.Projects.find(x=>x.id==id)||{date:today(),cat:'A',company:CO[0],contract:'否',promissory:'否'};
+  form(id?'編輯工案':'新增工案',[
+    {k:'name',l:'工案名稱',r:1,w:1},{k:'cat',l:'案件類別',t:'select',o:CAT},{k:'company',l:'接案公司',t:'select',o:CO},
+    {k:'title',l:'客戶發票抬頭',r:1},{k:'taxid',l:'統編'},
+    {k:'net',l:'未稅總額',t:'number',r:1},{k:'gross',l:'含稅總額（可手動修改）',t:'number',r:1},
+    {k:'contract',l:'是否已收合約正本',t:'select',o:['否','是']},{k:'promissory',l:'是否有開立本票',t:'select',o:['否','是']},
+    {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註',t:'area',w:1},{k:'date',l:'新增日期',t:'date'}],
+    v,g=>save('Projects',{...g,id:id||uid('P')}),(g,k,set)=>{if(k=='net')set('gross',Math.round(n0(g.net)*1.05))})}
+
+function editI(pid,id){
+  const v=D.Installments.find(x=>x.id==id)||{invDate:today()};
+  form(id?'編輯分期':'新增分期',[
+    {k:'progress',l:'款項進度',w:1},{k:'invDate',l:'發票日期',t:'date'},{k:'invNo',l:'發票號碼'},
+    {k:'net',l:'未稅金額',t:'number',r:1},{k:'tax',l:'5% 稅額',t:'number'},{k:'total',l:'總額',t:'number'},{k:'voucher',l:'傳票資訊'}],
+    v,g=>save('Installments',{...g,id:id||uid('I'),pid}),(g,k,set)=>{
+      if(k=='net'){const t=Math.round(n0(g.net)*.05);set('tax',t);set('total',n0(g.net)+t)}
+      if(k=='tax')set('total',n0(g.net)+n0(g.tax))})}
+
+function editY(pid,id){
+  const v=D.Payments.find(x=>x.id==id)||{date:today(),method:'網銀'};
+  form(id?'編輯收款':'新增收款',[
+    {k:'date',l:'收款日期',t:'date'},{k:'amount',l:'收款金額',t:'number',r:1},
+    {k:'method',l:'付款方式',t:'select',o:METH},{k:'iid',l:'對應分期（選填）',t:'select',o:[['','不指定'],...insts(pid).map(i=>[i.id,(i.invNo||'(無號碼)')+'　'+f$(i.total)])]},
+    {k:'check',l:'支票資訊（銀行／票號／到期日）',w:1,s:['method','支票']},
+    {k:'bank',l:'銀行',s:['method','網銀']},{k:'branch',l:'分行',s:['method','網銀']},
+    {k:'voucher',l:'傳票號碼',w:1}],
+    v,g=>{if(g.method!='支票')g.check='';if(g.method!='網銀')g.bank=g.branch='';save('Payments',{...g,id:id||uid('Y'),pid})})}
+
+function setup(){
+  form('連線設定',[{k:'url',l:'Google Apps Script 網頁應用程式網址（留空＝本機測試）',w:1},{k:'key',l:'密碼（需與 Code.gs 的 KEY 相同）',w:1}],cfg,
+    async g=>{cfg=g;localStorage.setItem('cfg',JSON.stringify(g));await run({action:'list'})})}
+
+/* ---------- 匯出 Excel ---------- */
+function exportXls(){
+  const pn=id=>(D.Projects.find(p=>p.id==id)||{}).name||'',inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
+  const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),n);
+  add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark}}));
+  add('分期明細',D.Installments.map(i=>({工案名稱:pn(i.pid),款項進度:i.progress||'',發票日期:i.invDate,發票號碼:i.invNo,未稅金額:n0(i.net),稅額:n0(i.tax),總額:n0(i.total),傳票資訊:i.voucher})));
+  add('收款紀錄',D.Payments.map(y=>({工案名稱:pn(y.pid),收款日期:y.date,付款方式:y.method,對應發票:inv(y.iid),支票資訊:y.check,銀行:y.bank,分行:y.branch,傳票號碼:y.voucher,收款金額:n0(y.amount)})));
+  XLSX.writeFile(wb,`工案款項_${today()}.xlsx`)}
+
+(async()=>{show();await run({action:'list'})})();
+</script>
+</body>
+</html>
