@@ -107,7 +107,7 @@ const CAT=['A','B','C','D'],CO=['何鑫實業','薪昌'],METH=['支票','網銀'
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const today=()=>new Date().toLocaleDateString('sv');
 let cfg={};try{cfg=JSON.parse(localStorage.getItem('cfg')||'{}')}catch(x){}
-let D={Projects:[],Installments:[],Payments:[]},cur=null,tab='o',Q='',FC='',FO='',selCo=-1;
+let D={Projects:[],Installments:[],Payments:[]},cur=null,tab='o',Q='',FC='',FO='',DF='',selCo=-1;
 
 /* ---------- 資料層：有填網址就存 Google Sheet，否則存瀏覽器（僅供測試） ---------- */
 async function call(o){
@@ -162,9 +162,10 @@ function overview(){
   <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
 function deposit(){
-  const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
+  const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0);
-  return`<div class="cards">${card('預收款工案數',a.length)}${card('已收金額（尚未沖預收）',r,'grn')}${card('工案總額',t)}${card('未收金額',t-r,'red')}</div>
+  return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>
+  <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（尚未沖預收）',r,'grn')}${card('工案總額',t)}${card('未收金額',t-r,'red')}</div>
   <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
   ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div></div>`}
 
