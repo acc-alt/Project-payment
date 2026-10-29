@@ -161,17 +161,22 @@ function overview(){
   <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><div class="sc"><table>${head('接案公司')}${co}</table></div></div>
   <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
-/* 未稅已收：收款紀錄所對應發票（分期）的未稅金額，同一張發票只算一次；
-   沒有對應發票的收款，才以「未稅總額 ÷ 含稅總額」比例換算 */
+/* 未稅已收：直接取用款項分期中發票的未稅金額，同一張發票只算一次。
+   1) 收款有選「對應發票」→ 用該發票未稅金額
+   2) 沒選時，收款金額等於某張尚未對應的發票總額 → 自動對應，用該發票未稅金額
+   3) 仍找不到 → 以「未稅總額 ÷ 含稅總額」比例換算 */
 const statNet=p=>{
-  const Y=pays(p.id),I=insts(p.id),n=n0(p.net),g=n0(p.gross),k=g?n/g:1,has=y=>y.iid&&I.some(i=>i.id==y.iid);
-  const ids=new Set(Y.filter(has).map(y=>y.iid)),loose=Y.filter(y=>!has(y));
-  const r=I.filter(i=>ids.has(i.id)).reduce((t,i)=>t+n0(i.net),0)+Math.round(loose.reduce((t,y)=>t+n0(y.amount),0)*k);
-  return{t:n,r,u:n-r,loose:loose.length}};
+  const Y=pays(p.id),I=insts(p.id),n=n0(p.net),g=n0(p.gross),k=g?n/g:1,used=new Set();let r=0,loose=0;
+  Y.forEach(y=>{const i=I.find(i=>i.id==y.iid);if(i)used.add(i.id)});
+  Y.filter(y=>!I.some(i=>i.id==y.iid)).forEach(y=>{
+    const i=I.find(i=>!used.has(i.id)&&n0(i.total)>0&&Math.abs(n0(i.total)-n0(y.amount))<1);
+    if(i)used.add(i.id);else{loose++;r+=Math.round(n0(y.amount)*k)}});
+  r+=I.filter(i=>used.has(i.id)).reduce((t,i)=>t+n0(i.net),0);
+  return{t:n,r,u:n-r,loose}};
 function deposit(){
   const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...statNet(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0),L=a.reduce((s,x)=>s+x.loose,0);
-  return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>${L?`<div class="warn">有 ${L} 筆收款尚未選擇「對應發票」，這些收款暫以「未稅 ÷ 含稅」比例換算。請到該工案的收款紀錄選擇對應發票，才會以發票的未稅金額計算。</div>`:''}
+  return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>${L?`<div class="warn">有 ${L} 筆收款找不到對應的發票（未選「對應發票」，且收款金額也與任何一期分期的總額不符），暫以「未稅 ÷ 含稅」比例換算。請到該工案的收款紀錄選擇對應發票。</div>`:''}
   <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（未稅，尚未沖預收）',r,'grn')}${card('未稅工案總額',t)}${card('未收金額（未稅）',t-r,'red')}</div>
   <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案，金額皆為未稅</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr>
   ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div></div>`}
