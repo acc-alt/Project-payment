@@ -221,6 +221,9 @@ function exportXls(){
   add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
   add('分期明細',D.Installments.map(i=>({工案名稱:pn(i.pid),款項進度:i.progress||'',發票日期:i.invDate,發票號碼:i.invNo,未稅金額:n0(i.net),稅額:n0(i.tax),總額:n0(i.total),傳票資訊:i.voucher})));
   add('收款紀錄',D.Payments.map(y=>({工案名稱:pn(y.pid),收款日期:y.date,付款方式:y.method,對應發票:inv(y.iid),支票資訊:y.check,銀行:y.bank,分行:y.branch,傳票號碼:y.voucher,收款金額:n0(y.amount)})));
+  const dep=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,含稅總額:s.t,已收金額:s.r,未收金額:s.u}});
+  if(dep.length)dep.push({工案名稱:'合計',含稅總額:dep.reduce((t,x)=>t+x.含稅總額,0),已收金額:dep.reduce((t,x)=>t+x.已收金額,0),未收金額:dep.reduce((t,x)=>t+x.未收金額,0)});
+  add('預收款統計',dep);
   XLSX.writeFile(wb,`工案款項_${today()}.xlsx`)}
 
 (async()=>{show();await run({action:'list'})})();
