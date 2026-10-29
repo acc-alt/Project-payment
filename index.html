@@ -59,6 +59,12 @@ button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 th{position:sticky;top:0;z-index:1}
 .tot td{font-weight:700;background:#eef2f7;border-top:2px solid #b7c4d3;position:sticky;bottom:0;z-index:1}
 .p-inst .tot td{background:#e4eef8}.p-pay .tot td{background:#e2f2e9}
+.charts{display:grid;gap:0 14px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.charts .panel h3 button+button{margin-left:6px}
+.charts .panel h3{flex-wrap:wrap}
+.dn{display:flex;align-items:center;gap:24px;padding:14px 18px;flex-wrap:wrap}
+.lg{flex:1;min-width:220px;width:auto}
+.lg i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:8px}
 table{border-collapse:collapse;width:100%;font-size:16px}
 th,td{padding:7px 12px;border-bottom:1px solid #eaeff4;text-align:left;vertical-align:middle}
 th{color:var(--mute);font-weight:600;font-size:14.5px;background:#fbfcfe;border-bottom:1px solid var(--line)}
@@ -109,7 +115,7 @@ const CAT=['A','B','C','D'],CO=['何鑫實業','薪昌'],METH=['支票','網銀'
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const today=()=>new Date().toLocaleDateString('sv');
 let cfg={};try{cfg=JSON.parse(localStorage.getItem('cfg')||'{}')}catch(x){}
-let D={Projects:[],Installments:[],Payments:[]},cur=null,tab='o',Q='',FC='',FO='',DF='',selCo=-1;
+let D={Projects:[],Installments:[],Payments:[]},cur=null,tab='o',Q='',FC='',FO='',DF='',selCo=-1,CM='cat',PF='';
 
 /* ---------- 資料層：有填網址就存 Google Sheet，否則存瀏覽器（僅供測試） ---------- */
 async function call(o){
@@ -150,14 +156,23 @@ function closeP(id){const p=byId(id);form('結案：'+e(p.name),[{k:'closeDate',
 function reopen(id){confirm('要取消結案，並移回工案列表嗎？')&&save('Projects',{...byId(id),closeDate:''})}
 const pickCo=i=>{selCo=selCo==i?-1:i;show()};
 
+const COL=['#2a5c8f','#d1a24a','#1f7a4d','#8a5a9b','#b4382f','#5b6b7c'];
+function donut(it,ctr,sub){
+  const T=it.reduce((s,x)=>s+x.v,0),R=70,C=2*Math.PI*R;let off=0;
+  const seg=T?it.filter(x=>x.v>0).map(x=>{const l=x.v/T*C,h=`<circle r="${R}" cx="90" cy="90" fill="none" stroke="${x.c}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 90 90)"/>`;off+=l;return h}).join(''):'';
+  return`<div class="dn"><svg viewBox="0 0 180 180" width="190" height="190" role="img"><circle r="${R}" cx="90" cy="90" fill="none" stroke="#e6ebf1" stroke-width="26"/>${seg}<text x="90" y="88" text-anchor="middle" font-size="22" font-weight="700" fill="#1c2733">${ctr}</text><text x="90" y="110" text-anchor="middle" font-size="12" fill="#66768a">${sub}</text></svg>
+  <table class="lg">${it.map(x=>`<tr><td><i style="background:${x.c}"></i>${e(x.n)}</td><td class="n">${f$(x.v)}</td><td class="n">${T?(x.v/T*100).toFixed(1):'0.0'}%</td></tr>`).join('')}</table></div>`}
 function overview(){
   const P=D.Projects.filter(p=>!p.closeDate).map(p=>({p,...statNet(p)})),S=a=>a.reduce((s,x)=>s+x.t,0),R=a=>a.reduce((s,x)=>s+x.r,0);
   const cells=a=>`<td class="n">${a.length}</td><td class="n">${f$(S(a))}</td><td class="n">${f$(R(a))}</td><td class="n red">${f$(S(a)-R(a))}</td>`;
   const head=t=>`<tr><th>${t}</th><th class="n">件數</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th></tr>`;
+  const PP=P.filter(x=>!PF||x.p.company==PF),T=S(P),K=CM=='cat'?'cat':'company',ch=`<div class="charts"><div class="panel"><h3>${PF?PF.slice(0,2):'全部'}總收款進度（未稅）<span class="sp"></span>${['',...CO].map(c=>`<button class="sm ${PF==c?'':'ghost'}" onclick="PF='${c}';show()">${c?c.slice(0,2):'全部'}</button>`).join('')}</h3>${donut([{n:'已收',v:R(PP),c:'#1f7a4d'},{n:'未收',v:Math.max(0,S(PP)-R(PP)),c:'#d1a24a'}],S(PP)?Math.round(R(PP)/S(PP)*100)+'%':'－','已收比例')}</div>
+  <div class="panel"><h3>金額占比（未稅）<span class="sp"></span><button class="sm ${CM=='cat'?'':'ghost'}" onclick="CM='cat';show()">依案件類別</button><button class="sm ${CM=='co'?'':'ghost'}" onclick="CM='co';show()">依接案公司</button></h3>${donut((CM=='cat'?CAT:CO).map((k,i)=>({n:CM=='cat'?k+' 類':k,v:S(P.filter(x=>x.p[K]==k)),c:COL[i]})),Math.round(T/10000).toLocaleString('zh-TW')+' 萬','未稅總額')}</div></div>`;
   const co=CO.map((c,i)=>{const a=P.filter(x=>x.p.company==c);return`<tr class="row" onclick="pickCo(${i})"><td>${selCo==i?'▼':'▶'} ${e(c)}</td>${cells(a)}</tr>`+(selCo==i?CAT.map(k=>`<tr class="sub"><td style="padding-left:32px">${k} 類</td>${cells(a.filter(x=>x.p.cat==k))}</tr>`).join(''):'')}).join('');
   const ct=CAT.map(k=>`<tr><td>${k} 類</td>${cells(P.filter(x=>x.p.cat==k))}</tr>`).join('');
   return`<p style="color:var(--mute);margin-top:0">總覽不含已結案的工案，金額皆為未稅。</p>
   <div class="cards">${card('工案數量',P.length)}${card('總工案金額（未稅）',S(P))}${card('已收金額（未稅）',R(P),'grn')}${card('未收金額（未稅）',S(P)-R(P),'red')}</div>
+  ${ch}
   <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><div class="sc"><table>${head('接案公司')}${co}</table></div></div>
   <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
