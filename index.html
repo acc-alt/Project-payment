@@ -161,12 +161,14 @@ function overview(){
   <div class="two"><div class="panel"><h3>依接案公司<small>點公司名稱，可看各案件類別的金額</small></h3><div class="sc"><table>${head('接案公司')}${co}</table></div></div>
   <div class="panel"><h3>依案件類別</h3><div class="sc"><table>${head('案件類別')}${ct}</table></div></div></div>`}
 
+/* 未稅換算：已收金額依「未稅總額 ÷ 含稅總額」比例換成未稅 */
+const statNet=p=>{const s=stat(p),g=n0(p.gross),n=n0(p.net),r=Math.round(s.r*(g?n/g:1));return{t:n,r,u:n-r}};
 function deposit(){
-  const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...stat(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
+  const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...statNet(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0);
   return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>
-  <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（尚未沖預收）',r,'grn')}${card('工案總額',t)}${card('未收金額',t-r,'red')}</div>
-  <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">含稅總額</th><th class="n">已收</th><th class="n">未收</th><th></th></tr>
+  <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（未稅，尚未沖預收）',r,'grn')}${card('未稅工案總額',t)}${card('未收金額（未稅）',t-r,'red')}</div>
+  <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案，金額皆為未稅</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr>
   ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div></div>`}
 
 function list(){
@@ -254,8 +256,8 @@ function exportXls(){
   add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
   add('分期明細',D.Installments.map(i=>({工案名稱:pn(i.pid),款項進度:i.progress||'',發票日期:i.invDate,發票號碼:i.invNo,未稅金額:n0(i.net),稅額:n0(i.tax),總額:n0(i.total),傳票資訊:i.voucher,備註:i.remark||''})));
   add('收款紀錄',D.Payments.map(y=>({工案名稱:pn(y.pid),收款日期:y.date,付款方式:y.method,對應發票:inv(y.iid),支票資訊:y.check,銀行:y.bank,分行:y.branch,傳票號碼:y.voucher,收款金額:n0(y.amount),備註:y.remark||''})));
-  const dep=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,含稅總額:s.t,已收金額:s.r,未收金額:s.u}});
-  if(dep.length)dep.push({工案名稱:'合計',含稅總額:dep.reduce((t,x)=>t+x.含稅總額,0),已收金額:dep.reduce((t,x)=>t+x.已收金額,0),未收金額:dep.reduce((t,x)=>t+x.未收金額,0)});
+  const dep=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const s=statNet(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,未稅總額:s.t,'已收金額(未稅)':s.r,'未收金額(未稅)':s.u}});
+  if(dep.length)dep.push({工案名稱:'合計',未稅總額:dep.reduce((t,x)=>t+x.未稅總額,0),'已收金額(未稅)':dep.reduce((t,x)=>t+x['已收金額(未稅)'],0),'未收金額(未稅)':dep.reduce((t,x)=>t+x['未收金額(未稅)'],0)});
   add('預收款統計',dep);
   XLSX.writeFile(wb,`工案款項_${today()}.xlsx`)}
 
