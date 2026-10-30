@@ -168,6 +168,37 @@ function fireworks(){
     x.globalAlpha=1;
     now-t0<1800||P.length?requestAnimationFrame(f):c.remove()})(performance.now());
 }
+function printView(){
+  let title,filt,head,body;
+  if(tab=='d'){
+    title='預收款統計（未稅）';filt=['接案公司：'+(DF||'全部')];
+    head=['新增日期','類別','接案公司','工案名稱','客戶','未稅總額','已收（未稅）','未收（未稅）'];
+    body=depData().map(x=>[x.p.date,x.p.cat,x.p.company,x.p.name,x.p.title,x.t,x.r,x.u])}
+  else{
+    const A=tab=='a';title=(A?'結案封存':'工案列表')+'（未稅）';
+    filt=['案件類別：'+(FC?FC+' 類':'全部'),'接案公司：'+(FO||'全部')];if(Q.trim())filt.push('搜尋：'+Q.trim());
+    head=[...(A?['結案日期']:[]),'新增日期','類別','接案公司','工案名稱','客戶','統編','未稅總額','已收（未稅）','未收（未稅）'];
+    body=listData().map(p=>{const s=statNet(p);return[...(A?[p.closeDate]:[]),p.date,p.cat,p.company,p.name,p.title,p.taxid,s.t,s.r,s.u]})}
+  const N=head.length-3,tot=[0,1,2].map(k=>body.reduce((t,r)=>t+n0(r[N+k]),0));
+  const cell=(v,i)=>i>=N?`<td class="n">${f$(v)}</td>`:`<td>${e(v)}</td>`;
+  const doc=`<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="utf-8"><title>${title}</title><style>
+@page{size:A4 landscape;margin:12mm}
+@media screen{body{padding:14px}}
+body{font:12px/1.5 "Noto Sans TC","Microsoft JhengHei",sans-serif;color:#000;margin:0}
+h1{font-size:20px;margin:0 0 4px}.meta{color:#444;margin-bottom:10px}
+table{border-collapse:collapse;width:100%}
+th,td{border:1px solid #888;padding:4px 6px;text-align:left;vertical-align:top}
+th{background:#e8edf3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+thead{display:table-header-group}tfoot{display:table-row-group}tr{page-break-inside:avoid}
+.n{text-align:right;white-space:nowrap}
+tfoot td{font-weight:700;background:#f1f4f8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+</style></head><body><h1>${title}</h1><div class="meta">${filt.map(e).join('　｜　')}　｜　列印時間：${new Date().toLocaleString('zh-TW',{hour12:false})}</div>
+<table><thead><tr>${head.map((h,i)=>`<th class="${i>=N?'n':''}">${h}</th>`).join('')}</tr></thead>
+<tbody>${body.map(r=>`<tr>${r.map(cell).join('')}</tr>`).join('')||`<tr><td colspan="${head.length}">沒有資料</td></tr>`}</tbody>
+<tfoot><tr><td colspan="${N}">合計（${body.length} 件）</td>${tot.map(v=>`<td class="n">${f$(v)}</td>`).join('')}</tr></tfoot></table></body></html>`;
+  $('#modal').innerHTML=`<div class="box" style="width:min(1150px,100%)"><h3>🖨️ 列印預覽：${e(title)}</h3><iframe id="pv" style="width:100%;height:62vh;border:1px solid var(--line);border-radius:8px;background:#fff"></iframe><div class="bar"><button class="ghost" onclick="closeM()">取消</button><button onclick="doPrint()">列印</button></div></div>`;
+  $('#modal').hidden=false;$('#pv').srcdoc=doc}
+function doPrint(){const w=$('#pv').contentWindow;w.focus();w.print()}
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
 function go(t){tab=t;cur=null;show()}
 function show(){
@@ -216,10 +247,11 @@ const statNet=p=>{
     if(i)used.add(i.id);else{loose++;r+=Math.round(n0(y.amount)*k)}});
   r+=I.filter(i=>used.has(i.id)).reduce((t,i)=>t+n0(i.net),0);
   return{t:n,r,u:n-r,loose}};
+const depData=()=>D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...statNet(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
 function deposit(){
-  const a=D.Projects.filter(p=>!p.closeDate&&p.offset!='是'&&(!DF||p.company==DF)).map(p=>({p,...statNet(p)})).sort((x,y)=>y.p.date.localeCompare(x.p.date));
+  const a=depData();
   const t=a.reduce((s,x)=>s+x.t,0),r=a.reduce((s,x)=>s+x.r,0),L=a.reduce((s,x)=>s+x.loose,0);
-  return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>${L?`<div class="warn">有 ${L} 筆收款找不到對應的發票（未選「對應發票」，且收款金額也與任何一期分期的總額不符），暫以「未稅 ÷ 含稅」比例換算。請到該工案的收款紀錄選擇對應發票。</div>`:''}
+  return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select><button class="ghost" onclick="printView()">🖨️ 列印</button></div>${L?`<div class="warn">有 ${L} 筆收款找不到對應的發票（未選「對應發票」，且收款金額也與任何一期分期的總額不符），暫以「未稅 ÷ 含稅」比例換算。請到該工案的收款紀錄選擇對應發票。</div>`:''}
   <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（未稅，尚未沖預收）',r,'grn')}${card('未稅工案總額',t)}${card('未收金額（未稅）',t-r,'red')}</div>
   <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案，金額皆為未稅</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr>
   ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">🎊 目前沒有預收款工案！</td></tr>'}</table></div></div>`}
@@ -229,13 +261,15 @@ function list(){
   return`<div class="filters"><input id="q" placeholder="搜尋：工案名稱、客戶、統編、發票號碼、傳票、備註…" value="${e(Q)}" oninput="Q=this.value;rows()">
   <select id="fc" onchange="FC=this.value;rows()"><option value="">全部類別</option>${CAT.map(c=>`<option ${FC==c?'selected':''} value="${c}">${c} 類</option>`).join('')}</select>
   <select id="fo" onchange="FO=this.value;rows()"><option value="">全部公司</option>${CO.map(c=>`<option ${FO==c?'selected':''}>${c}</option>`).join('')}</select>
-  ${A?'':'<button onclick="editP()">＋ 新增工案</button>'}</div>
+  <button class="ghost" onclick="printView()">🖨️ 列印</button>${A?'':'<button onclick="editP()">＋ 新增工案</button>'}</div>
   <div class="panel"><div class="sc"><table><thead><tr>${A?'<th>結案日期</th>':''}<th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th>統編</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr></thead><tbody id="tb"></tbody></table></div></div>`}
 function blob(p){
   return[p.name,p.title,p.taxid,p.insurance,p.remark,p.company,...insts(p.id).flatMap(i=>[i.invNo,i.voucher,i.progress,i.remark]),...pays(p.id).flatMap(y=>[y.voucher,y.check,y.bank,y.branch,y.remark])].join(' ').toLowerCase()}
-function rows(){
+function listData(){
   const A=tab=='a',q=Q.trim().toLowerCase();
-  const a=D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>A?y.closeDate.localeCompare(x.closeDate):y.date.localeCompare(x.date));
+  return D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>A?y.closeDate.localeCompare(x.closeDate):y.date.localeCompare(x.date))}
+function rows(){
+  const A=tab=='a',a=listData();
   $('#tb').innerHTML=a.map(p=>{const s=statNet(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}${s.u<=0&&s.t>0?' 🎉':''}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'📭 尚無結案封存的工案。':'🔍 沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
 const open1=id=>{cur=id;show();scrollTo(0,0)};
 
