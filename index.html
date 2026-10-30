@@ -277,7 +277,7 @@ function blob(p){
   return[p.name,p.title,p.taxid,p.insurance,p.remark,p.company,...insts(p.id).flatMap(i=>[i.invNo,i.voucher,i.progress,i.remark]),...pays(p.id).flatMap(y=>[y.voucher,y.check,y.bank,y.branch,y.remark])].join(' ').toLowerCase()}
 function listData(){
   const A=tab=='a',q=Q.trim().toLowerCase();
-  return D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>A?y.closeDate.localeCompare(x.closeDate):y.date.localeCompare(x.date))}
+  return D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>{if(A)return y.closeDate.localeCompare(x.closeDate);const o=(L,v)=>L.indexOf(v)<0?99:L.indexOf(v);return o(CO,x.company)-o(CO,y.company)||o(CAT,x.cat)-o(CAT,y.cat)||y.date.localeCompare(x.date)})}
 function rows(){
   const A=tab=='a',a=listData();
   $('#tb').innerHTML=a.map(p=>{const s=statNet(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}${s.u<=0&&s.t>0?' 🎉':''}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'📭 尚無結案封存的工案。':'🔍 沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
