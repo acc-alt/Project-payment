@@ -215,7 +215,10 @@ function show(){
   ['o','l','a','d'].forEach(t=>$('#t_'+t).className=tab==t?'on':'');
   $('#v').innerHTML=(cfg.url?'':'<div class="warn">目前為「本機測試模式」，資料只存在這台瀏覽器。請按右上角「連線設定」填入 Google Apps Script 網址，才會存進 Google Sheet。</div>')+
     (cur?detail():{o:overview,l:list,a:list,d:deposit}[tab]());
-  if(!cur&&(tab=='l'||tab=='a'))rows()}
+  if(!cur&&(tab=='l'||tab=='a')){rows();fit()}}
+/* 工案列表：表格區塊填滿畫面剩餘高度，內容過多時在框內捲動 */
+function fit(){const t=$('#tb');if(!t)return;const sc=t.closest('.sc');sc.style.maxHeight='none';sc.style.height=Math.max(260,innerHeight-(sc.getBoundingClientRect().top+scrollY)-52)+'px'}
+addEventListener('resize',fit);
 
 function card(t,v,cls=''){const em=/未收/.test(t)?'⏳':/已收/.test(t)?'✅':/數|件/.test(t)?'🏗️':'💼';return`<div class="c big"><small>${em} ${t}</small><b class="${cls}">${f$(v)}</b></div>`}
 const act=p=>`<td onclick="event.stopPropagation()"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-right:6px"><input type="checkbox" style="width:auto" ${p.offset=='是'?'checked':''} onchange="toggleOff('${p.id}')">已收款已沖預收</label> <button class="sm" onclick="closeP('${p.id}')">結案</button></td>`;
