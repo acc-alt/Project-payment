@@ -285,7 +285,7 @@ const open1=id=>{cur=id;show();scrollTo(0,0)};
 
 function detail(){
   const p=D.Projects.find(x=>x.id==cur);if(!p){cur=null;return list()}
-  const s=statNet(p),I=insts(p.id).sort((a,b)=>a.invDate.localeCompare(b.invDate)),Y=pays(p.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const s=statNet(p),I=insts(p.id),Y=pays(p.id).sort((a,b)=>a.date.localeCompare(b.date));
   const inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
   return`<p><button class="ghost" onclick="go(tab)">← 回列表</button></p>
   <div class="cards">${card('工程總額（未稅）',s.t)}${card('已收總額（未稅）',s.r,'grn')}${card('未收總額（未稅）',s.u,'red')}</div>
