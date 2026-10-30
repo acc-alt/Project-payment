@@ -326,7 +326,7 @@ function viewRemark(sh,id){
   $('#modal').innerHTML=`<div class="box" style="width:min(460px,100%)"><h3>${P?'收款備註':'分期備註'}${k?'：'+e(k):''}</h3><div style="white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto">${e(i.remark)}</div><div class="bar"><button class="ghost" onclick="closeM()">關閉</button></div></div>`;
   $('#modal').hidden=false}
 function editI(pid,id){
-  const v=D.Installments.find(x=>x.id==id)||{invDate:today()};
+  const v=D.Installments.find(x=>x.id==id)||{};
   form(id?'編輯分期':'新增分期',[
     {k:'progress',l:'款項進度',w:1},{k:'invDate',l:'發票日期',t:'date'},{k:'invNo',l:'發票號碼'},
     {k:'net',l:'未稅金額',t:'number',r:1},{k:'tax',l:'5% 稅額',t:'number'},{k:'total',l:'總額',t:'number'},{k:'voucher',l:'傳票資訊'},{k:'remark',l:'備註',t:'area',w:1}],
