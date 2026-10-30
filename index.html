@@ -6,36 +6,43 @@
 <title>工案款項追蹤系統</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#eef1f5;--card:#fff;--ink:#1c2733;--mute:#66768a;--line:#dfe5ec;--navy:#16273b;--ac:#2a5c8f;--ac2:#e9f0f7;--red:#b4382f;--grn:#1f7a4d;--row:#f6f9fc}
+:root{--bg:#eef1f5;--card:#fff;--ink:#1c2733;--mute:#66768a;--line:#dfe5ec;--navy:#16273b;--ac:#2a5c8f;--ac2:#e9f0f7;--gold:var(--gold);--red:#b4382f;--grn:#1f7a4d;--row:#f6f9fc}
+body[data-theme=forest]{--navy:#173a2f;--ac:#2f7d5b;--ac2:#e6f3ec;--bg:#edf3ee;--gold:#e3b64d;--row:#f3f9f5}
+body[data-theme=sunset]{--navy:#4a2230;--ac:#c4552d;--ac2:#fbece5;--bg:#f8f0ea;--gold:#f4bb4a;--row:#fdf5f0}
+body[data-theme=berry]{--navy:#33204f;--ac:#7b4bb0;--ac2:#f0e9f8;--bg:#f1eef7;--gold:#f2a7cc;--row:#f8f4fc}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-header{position:sticky;top:0;z-index:20;background:var(--navy);color:#cfd9e6;padding:0 20px;display:flex;gap:4px;align-items:stretch;flex-wrap:wrap;box-shadow:0 1px 0 #0c1827}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(100deg,var(--navy),color-mix(in srgb,var(--navy) 65%,var(--ac)));color:#cfd9e6;padding:0 20px;display:flex;gap:4px;align-items:stretch;flex-wrap:wrap;box-shadow:0 1px 0 #0c1827}
 header h1{font-size:20px;font-weight:700;color:#fff;margin:0 22px 0 0;letter-spacing:.08em;display:flex;align-items:center;padding:12px 0}
-header h1::before{content:"";width:4px;height:18px;background:#d1a24a;margin-right:10px;border-radius:1px}
+header h1::before{content:"🏗️";margin-right:8px;font-size:23px}
 header button{background:transparent;color:#a9b9cc;border:0;border-bottom:3px solid transparent;border-radius:0;padding:14px 14px 11px;font-size:16px}
 header button:hover{color:#fff}
-header button.on{color:#fff;border-bottom-color:#d1a24a;font-weight:600}
+header button.on{color:#fff;border-bottom-color:var(--gold);font-weight:600}
 header button.ghost{background:rgba(255,255,255,.08);color:#dbe5f0;border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:5px 12px;margin:9px 0 9px 8px;font-size:15px}
 header button.ghost:hover{background:rgba(255,255,255,.16)}
-#msg{align-self:center;font-size:15px;color:#d1a24a}
+header select{width:auto;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.22);margin:9px 0 9px 8px;padding:4px 8px;font-size:15px;cursor:pointer}
+header select option{color:#1c2733}
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 22px;border-radius:26px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.3);font-size:16px}
+#msg{align-self:center;font-size:15px;color:var(--gold)}
 .sp{flex:1}
 main{width:100%;padding:14px 20px 28px}
-button{font:inherit;background:var(--ac);color:#fff;border:1px solid transparent;border-radius:5px;padding:6px 14px;cursor:pointer;transition:background .15s}
-button:hover{background:#224d79}
+button{font:inherit;background:var(--ac);color:#fff;border:1px solid transparent;border-radius:8px;padding:6px 14px;cursor:pointer;transition:background .15s}
+button:hover{filter:brightness(.88)}
 button.ghost{background:#fff;color:var(--ac);border-color:#c6d4e3}
 button.ghost:hover{background:var(--ac2)}
 button.del{background:#fff;color:var(--red);border-color:#e6c6c3}
 button.del:hover{background:#fbeeed}
 button.sm{padding:2px 9px;font-size:15px}
-input,select,textarea{font:inherit;width:100%;padding:6px 9px;border:1px solid #cdd7e2;border-radius:5px;background:#fff;color:var(--ink)}
+input,select,textarea{font:inherit;width:100%;padding:6px 9px;border:1px solid #cdd7e2;border-radius:8px;background:#fff;color:var(--ink)}
 input:focus,select:focus,textarea:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(42,92,143,.15)}
 button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px}
-.c{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:6px;padding:10px 16px}
+.c{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--ac);border-radius:12px;padding:10px 16px;transition:transform .15s}
+.c:hover{transform:translateY(-3px)}
 .c small{color:var(--mute);display:block;font-size:14.5px;margin-bottom:2px}
 .c b{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.01em}
 .red{color:var(--red)}.grn{color:var(--grn)}
-.panel{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:0 0 4px;margin-bottom:14px;overflow:hidden}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0 0 4px;margin-bottom:14px;overflow:hidden}
 .panel h3{margin:0;padding:10px 14px;font-size:19px;font-weight:700;display:flex;align-items:center;gap:10px;background:#f7f9fc;border-bottom:1px solid var(--line)}
 .panel h3 small{font-size:14.5px;color:var(--mute);font-weight:400}
 .panel>.info{padding:12px 14px}
@@ -89,24 +96,26 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--row)}
 [hidden]{display:none!important}
 .tag{padding:1px 9px;border-radius:3px;background:var(--ac2);color:var(--ac);font-size:14px;font-weight:600}
 .tag.ok{background:var(--grn);color:#fff}
-.warn{background:#fdf6e3;border:1px solid #e8d49a;border-left:4px solid #d1a24a;padding:8px 14px;border-radius:4px;margin-bottom:14px;font-size:15.5px}
+.warn{background:#fdf6e3;border:1px solid #e8d49a;border-left:4px solid var(--gold);padding:8px 14px;border-radius:4px;margin-bottom:14px;font-size:15.5px}
 @media(max-width:600px){.grid{grid-template-columns:1fr}header h1{width:100%}}
 </style>
 </head>
 <body>
 <header>
   <h1>工案款項追蹤</h1>
-  <button id="t_o" onclick="go('o')">總覽</button>
-  <button id="t_l" onclick="go('l')">工案列表</button>
-  <button id="t_a" onclick="go('a')">結案封存</button>
-  <button id="t_d" onclick="go('d')">預收款統計</button>
+  <button id="t_o" onclick="go('o')">📊 總覽</button>
+  <button id="t_l" onclick="go('l')">📋 工案列表</button>
+  <button id="t_a" onclick="go('a')">🗄️ 結案封存</button>
+  <button id="t_d" onclick="go('d')">💰 預收款統計</button>
   <span class="sp"></span>
   <span id="msg"></span>
+  <select id="theme" onchange="setTheme(this.value)" title="切換主題"><option value="ocean">🌊 海洋</option><option value="forest">🌲 森林</option><option value="sunset">🌅 夕陽</option><option value="berry">🍇 莓果</option></select>
   <button class="ghost" onclick="exportXls()">匯出 Excel</button>
   <button class="ghost" onclick="setup()">連線設定</button>
 </header>
 <main id="v"></main>
 <div id="modal" hidden></div>
+<div id="toast" hidden></div>
 
 <script>
 const $=s=>document.querySelector(s),n0=v=>Number(v)||0,f$=v=>n0(v).toLocaleString('zh-TW');
@@ -141,6 +150,8 @@ const insts=id=>D.Installments.filter(x=>x.pid==id),pays=id=>D.Payments.filter(x
 const stat=p=>{const r=pays(p.id).reduce((s,y)=>s+n0(y.amount),0);return{t:n0(p.gross),r,u:n0(p.gross)-r}};
 
 /* ---------- 版面 ---------- */
+function setTheme(t){document.body.dataset.theme=t;cfg={...cfg,theme:t};localStorage.setItem('cfg',JSON.stringify(cfg))}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
 function go(t){tab=t;cur=null;show()}
 function show(){
   ['o','l','a','d'].forEach(t=>$('#t_'+t).className=tab==t?'on':'');
@@ -148,25 +159,25 @@ function show(){
     (cur?detail():{o:overview,l:list,a:list,d:deposit}[tab]());
   if(!cur&&(tab=='l'||tab=='a'))rows()}
 
-function card(t,v,cls=''){return`<div class="c big"><small>${t}</small><b class="${cls}">${f$(v)}</b></div>`}
+function card(t,v,cls=''){const em=/未收/.test(t)?'⏳':/已收/.test(t)?'✅':/數|件/.test(t)?'🏗️':'💼';return`<div class="c big"><small>${em} ${t}</small><b class="${cls}">${f$(v)}</b></div>`}
 const act=p=>`<td onclick="event.stopPropagation()"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-right:6px"><input type="checkbox" style="width:auto" ${p.offset=='是'?'checked':''} onchange="toggleOff('${p.id}')">已收款已沖預收</label> <button class="sm" onclick="closeP('${p.id}')">結案</button></td>`;
 const byId=id=>D.Projects.find(x=>x.id==id);
 function toggleOff(id){const p=byId(id);save('Projects',{...p,offset:p.offset=='是'?'':'是'})}
-function closeP(id){const p=byId(id);form('結案：'+e(p.name),[{k:'closeDate',l:'結案日期',t:'date',r:1}],{closeDate:today()},g=>save('Projects',{...p,closeDate:g.closeDate}))}
+function closeP(id){const p=byId(id);form('結案：'+e(p.name),[{k:'closeDate',l:'結案日期',t:'date',r:1}],{closeDate:today()},g=>save('Projects',{...p,closeDate:g.closeDate}).then(()=>toast('🎉 恭喜結案！')))}
 function reopen(id){confirm('要取消結案，並移回工案列表嗎？')&&save('Projects',{...byId(id),closeDate:''})}
 const pickCo=i=>{selCo=selCo==i?-1:i;show()};
 
-const COL=['#2a5c8f','#d1a24a','#1f7a4d','#8a5a9b','#b4382f','#5b6b7c'];
+const COL=['var(--ac)','var(--gold)','#1f7a4d','#8a5a9b','#b4382f','#5b6b7c'];
 function donut(it,ctr,sub){
   const T=it.reduce((s,x)=>s+x.v,0),R=70,C=2*Math.PI*R;let off=0;
-  const seg=T?it.filter(x=>x.v>0).map(x=>{const l=x.v/T*C,h=`<circle r="${R}" cx="90" cy="90" fill="none" stroke="${x.c}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 90 90)"/>`;off+=l;return h}).join(''):'';
+  const seg=T?it.filter(x=>x.v>0).map(x=>{const l=x.v/T*C,h=`<circle r="${R}" cx="90" cy="90" fill="none" style="stroke:${x.c}" stroke-width="26" stroke-dasharray="${l} ${C-l}" stroke-dashoffset="${-off}" transform="rotate(-90 90 90)"/>`;off+=l;return h}).join(''):'';
   return`<div class="dn"><svg viewBox="0 0 180 180" width="190" height="190" role="img"><circle r="${R}" cx="90" cy="90" fill="none" stroke="#e6ebf1" stroke-width="26"/>${seg}<text x="90" y="88" text-anchor="middle" font-size="22" font-weight="700" fill="#1c2733">${ctr}</text><text x="90" y="110" text-anchor="middle" font-size="12" fill="#66768a">${sub}</text></svg>
   <table class="lg">${it.map(x=>`<tr><td><i style="background:${x.c}"></i>${e(x.n)}</td><td class="n">${f$(x.v)}</td><td class="n">${T?(x.v/T*100).toFixed(1):'0.0'}%</td></tr>`).join('')}</table></div>`}
 function overview(){
   const P=D.Projects.filter(p=>!p.closeDate).map(p=>({p,...statNet(p)})),S=a=>a.reduce((s,x)=>s+x.t,0),R=a=>a.reduce((s,x)=>s+x.r,0);
   const cells=a=>`<td class="n">${a.length}</td><td class="n">${f$(S(a))}</td><td class="n">${f$(R(a))}</td><td class="n red">${f$(S(a)-R(a))}</td>`;
   const head=t=>`<tr><th>${t}</th><th class="n">件數</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th></tr>`;
-  const PP=P.filter(x=>!PF||x.p.company==PF),T=S(P),K=CM=='cat'?'cat':'company',ch=`<div class="charts"><div class="panel"><h3>${PF?PF.slice(0,2):'全部'}總收款進度（未稅）<span class="sp"></span>${['',...CO].map(c=>`<button class="sm ${PF==c?'':'ghost'}" onclick="PF='${c}';show()">${c?c.slice(0,2):'全部'}</button>`).join('')}</h3>${donut([{n:'已收',v:R(PP),c:'#1f7a4d'},{n:'未收',v:Math.max(0,S(PP)-R(PP)),c:'#d1a24a'}],S(PP)?Math.round(R(PP)/S(PP)*100)+'%':'－','已收比例')}</div>
+  const PP=P.filter(x=>!PF||x.p.company==PF),T=S(P),K=CM=='cat'?'cat':'company',ch=`<div class="charts"><div class="panel"><h3>${PF?PF.slice(0,2):'全部'}總收款進度（未稅）<span class="sp"></span>${['',...CO].map(c=>`<button class="sm ${PF==c?'':'ghost'}" onclick="PF='${c}';show()">${c?c.slice(0,2):'全部'}</button>`).join('')}</h3>${donut([{n:'已收',v:R(PP),c:'#1f7a4d'},{n:'未收',v:Math.max(0,S(PP)-R(PP)),c:'var(--gold)'}],S(PP)?Math.round(R(PP)/S(PP)*100)+'%':'－','已收比例')}</div>
   <div class="panel"><h3>金額占比（未稅）<span class="sp"></span><button class="sm ${CM=='cat'?'':'ghost'}" onclick="CM='cat';show()">依案件類別</button><button class="sm ${CM=='co'?'':'ghost'}" onclick="CM='co';show()">依接案公司</button></h3>${donut((CM=='cat'?CAT:CO).map((k,i)=>({n:CM=='cat'?k+' 類':k,v:S(P.filter(x=>x.p[K]==k)),c:COL[i]})),Math.round(T/10000).toLocaleString('zh-TW')+' 萬','未稅總額')}</div></div>`;
   const co=CO.map((c,i)=>{const a=P.filter(x=>x.p.company==c);return`<tr class="row" onclick="pickCo(${i})"><td>${selCo==i?'▼':'▶'} ${e(c)}</td>${cells(a)}</tr>`+(selCo==i?CAT.map(k=>`<tr class="sub"><td style="padding-left:32px">${k} 類</td>${cells(a.filter(x=>x.p.cat==k))}</tr>`).join(''):'')}).join('');
   const ct=CAT.map(k=>`<tr><td>${k} 類</td>${cells(P.filter(x=>x.p.cat==k))}</tr>`).join('');
@@ -194,7 +205,7 @@ function deposit(){
   return`<div class="filters"><select style="max-width:260px" onchange="DF=this.value;show()"><option value="">全部接案公司</option>${CO.map(c=>`<option ${DF==c?'selected':''}>${e(c)}</option>`).join('')}</select></div>${L?`<div class="warn">有 ${L} 筆收款找不到對應的發票（未選「對應發票」，且收款金額也與任何一期分期的總額不符），暫以「未稅 ÷ 含稅」比例換算。請到該工案的收款紀錄選擇對應發票。</div>`:''}
   <div class="cards">${card('預收款工案數',a.length)}${card('已收金額（未稅，尚未沖預收）',r,'grn')}${card('未稅工案總額',t)}${card('未收金額（未稅）',t-r,'red')}</div>
   <div class="panel"><h3>預收款統計<small>尚未按「已收款已沖預收」的工案，金額皆為未稅</small></h3><div class="sc"><table><tr><th>新增日期</th><th>類別</th><th>接案公司</th><th>工案名稱</th><th>客戶</th><th class="n">未稅總額</th><th class="n">已收（未稅）</th><th class="n">未收（未稅）</th><th></th></tr>
-  ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">目前沒有預收款工案。</td></tr>'}</table></div></div>`}
+  ${a.map(x=>`<tr class="row" onclick="open1('${x.p.id}')"><td>${e(x.p.date)}</td><td><span class="tag">${e(x.p.cat)}</span></td><td>${e(x.p.company)}</td><td>${e(x.p.name)}</td><td>${e(x.p.title)}</td><td class="n">${f$(x.t)}</td><td class="n grn">${f$(x.r)}</td><td class="n red">${f$(x.u)}</td>${act(x.p)}</tr>`).join('')||'<tr><td colspan="9">🎊 目前沒有預收款工案！</td></tr>'}</table></div></div>`}
 
 function list(){
   const A=tab=='a';
@@ -208,7 +219,7 @@ function blob(p){
 function rows(){
   const A=tab=='a',q=Q.trim().toLowerCase();
   const a=D.Projects.filter(p=>!!p.closeDate==A&&(!FC||p.cat==FC)&&(!FO||p.company==FO)&&(!q||blob(p).includes(q))).sort((x,y)=>A?y.closeDate.localeCompare(x.closeDate):y.date.localeCompare(x.date));
-  $('#tb').innerHTML=a.map(p=>{const s=statNet(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'尚無結案封存的工案。':'沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
+  $('#tb').innerHTML=a.map(p=>{const s=statNet(p);return`<tr class="row" onclick="open1('${p.id}')">${A?`<td>${e(p.closeDate)}</td>`:''}<td>${e(p.date)}</td><td><span class="tag">${e(p.cat)}</span></td><td>${e(p.company)}</td><td>${e(p.name)}${s.u<=0&&s.t>0?' 🎉':''}</td><td>${e(p.title)}</td><td>${e(p.taxid)}</td><td class="n">${f$(s.t)}</td><td class="n grn">${f$(s.r)}</td><td class="n red">${f$(s.u)}</td>${A?`<td onclick="event.stopPropagation()"><button class="sm ghost" onclick="reopen('${p.id}')">取消結案</button></td>`:act(p)}</tr>`}).join('')||`<tr><td colspan="11">${A?'📭 尚無結案封存的工案。':'🔍 沒有符合的工案。按「＋ 新增工案」開始建立。'}</td></tr>`}
 const open1=id=>{cur=id;show();scrollTo(0,0)};
 
 function detail(){
@@ -245,7 +256,7 @@ function editP(id){
     {k:'net',l:'未稅總額',t:'number',r:1},{k:'gross',l:'含稅總額（可手動修改）',t:'number',r:1},
     {k:'contract',l:'是否已收合約正本',t:'select',o:['否','是']},{k:'promissory',l:'是否有開立本票',t:'select',o:['否','是']},
     {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註',t:'area',w:1},{k:'date',l:'新增日期',t:'date'}],
-    v,g=>save('Projects',{...(byId(id)||{}),...g,id:id||uid('P')}),(g,k,set)=>{if(k=='net')set('gross',Math.round(n0(g.net)*1.05))})}
+    v,g=>save('Projects',{...(byId(id)||{}),...g,id:id||uid('P')}).then(()=>toast(id?'✅ 已儲存':'✨ 新增成功！')),(g,k,set)=>{if(k=='net')set('gross',Math.round(n0(g.net)*1.05))})}
 
 function viewRemark(sh,id){
   const i=D[sh].find(x=>x.id==id),P=sh=='Payments',k=P?i.voucher:i.invNo;
@@ -272,7 +283,7 @@ function editY(pid,id){
 
 function setup(){
   form('連線設定',[{k:'url',l:'Google Apps Script 網頁應用程式網址（留空＝本機測試）',w:1},{k:'key',l:'密碼（需與 Code.gs 的 KEY 相同）',w:1}],cfg,
-    async g=>{cfg=g;localStorage.setItem('cfg',JSON.stringify(g));await run({action:'list'})})}
+    async g=>{cfg={...cfg,...g};localStorage.setItem('cfg',JSON.stringify(g));await run({action:'list'})})}
 
 /* ---------- 匯出 Excel ---------- */
 function exportXls(){
@@ -286,7 +297,7 @@ function exportXls(){
   add('預收款統計',dep);
   XLSX.writeFile(wb,`工案款項_${today()}.xlsx`)}
 
-(async()=>{show();await run({action:'list'})})();
+(async()=>{document.body.dataset.theme=cfg.theme||'ocean';$('#theme').value=cfg.theme||'ocean';show();await run({action:'list'})})();
 </script>
 </body>
 </html>
