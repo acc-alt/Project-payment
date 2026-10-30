@@ -85,7 +85,13 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--row)}
 .bar{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .filters{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
 .filters input{flex:2;min-width:220px}.filters select{flex:1;min-width:120px}
-.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 24px}
+/* 資料區塊：依視窗寬度固定欄數，備註接在保單資訊右邊並延伸到最右 */
+.info{--cols:2;--g:24px;display:flex;flex-wrap:wrap;gap:8px var(--g)}
+@media(min-width:800px){.info{--cols:4}}
+@media(min-width:1100px){.info{--cols:6}}
+@media(min-width:1500px){.info{--cols:8}}
+.info>div{flex:0 0 calc((100% - (var(--cols) - 1)*var(--g))/var(--cols) - .5px);min-width:0;white-space:pre-wrap;word-break:break-word}
+.info>.rm{flex:1 1 calc((100% - (var(--cols) - 1)*var(--g))/var(--cols) - .5px)}
 .info span{color:var(--mute);font-size:14.5px;display:block}
 #modal{position:fixed;inset:0;background:rgba(16,28,42,.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
 #modal .box{background:#fff;border-radius:8px;padding:22px 24px;width:min(760px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)}
@@ -284,7 +290,7 @@ function detail(){
   return`<p><button class="ghost" onclick="go(tab)">← 回列表</button></p>
   <div class="cards">${card('工程總額（未稅）',s.t)}${card('已收總額（未稅）',s.r,'grn')}${card('未收總額（未稅）',s.u,'red')}</div>
   <div class="panel p-info"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}')">刪除</button></h3>
-  <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['接案日期',p.signDate],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
+  <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['接案日期',p.signDate],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}<div class="ins"><span>工程險保單資訊</span>${e(p.insurance)||'－'}</div><div class="rm"><span>備註</span>${e(p.remark)||'－'}</div></div></div>
   <div class="panel p-inst"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><div class="sc"><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th>備註</th><th></th></tr>
   ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td>${i.remark?`<button class="sm ghost" onclick="viewRemark('Installments','${i.id}')">檢視</button>`:''}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="9">尚未設定分期</td></tr>'}${I.length?`<tr class="tot"><td colspan="3">合計（${I.length} 期）</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.net),0))}</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.tax),0))}</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.total),0))}</td><td colspan="3"></td></tr>`:''}</table></div></div>
   <div class="panel p-pay"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><div class="sc"><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th>備註</th><th></th></tr>
@@ -312,7 +318,7 @@ function editP(id){
     {k:'net',l:'未稅總額',t:'number',r:1},{k:'gross',l:'含稅總額（可手動修改）',t:'number',r:1},
     {k:'contract',l:'是否已收合約正本',t:'select',o:['否','是']},{k:'promissory',l:'是否有開立本票',t:'select',o:['否','是']},
     {k:'date',l:'新增日期',t:'date'},{k:'signDate',l:'接案日期',t:'date'},
-    {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註（剩餘空間皆用於顯示備註）',t:'area',w:1,fill:1}],
+    {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註',t:'area',w:1,fill:1}],
     v,g=>save('Projects',{...(byId(id)||{}),...g,id:id||uid('P')}).then(()=>toast(id?'✅ 已儲存':'✨ 新增成功！')),(g,k,set)=>{if(k=='net')set('gross',Math.round(n0(g.net)*1.05))})}
 
 function viewRemark(sh,id){
