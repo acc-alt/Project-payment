@@ -91,6 +91,10 @@ tr.row{cursor:pointer}tr.row:hover td{background:var(--row)}
 #modal .box{background:#fff;border-radius:8px;padding:22px 24px;width:min(760px,100%);max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 .box h3{margin:0 0 16px;font-size:21px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.box.fill{display:flex;flex-direction:column;height:min(92vh,900px);overflow:hidden}
+.box.fill .grid{flex:0 1 auto;overflow:auto;min-height:0}
+label.fx{display:flex;flex-direction:column;flex:1 1 auto;min-height:90px;margin-top:12px;font-size:14.5px;color:var(--mute);font-weight:500}
+label.fx textarea{flex:1;resize:none;min-height:60px;margin-top:3px;color:var(--ink);font-size:16px}
 .grid label{font-size:14.5px;color:var(--mute);font-weight:500}.grid label.w{grid-column:1/-1}
 .grid input,.grid select,.grid textarea{margin-top:3px;color:var(--ink);font-size:16px}
 [hidden]{display:none!important}
@@ -280,7 +284,7 @@ function detail(){
   return`<p><button class="ghost" onclick="go(tab)">← 回列表</button></p>
   <div class="cards">${card('工程總額（未稅）',s.t)}${card('已收總額（未稅）',s.r,'grn')}${card('未收總額（未稅）',s.u,'red')}</div>
   <div class="panel p-info"><h3>${e(p.name)} <span class="tag">${e(p.cat)} 類</span><span class="tag">${e(p.company)}</span><span class="sp"></span><button class="ghost sm" onclick="editP('${p.id}')">編輯</button><button class="del sm" onclick="rm('Projects','${p.id}')">刪除</button></h3>
-  <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
+  <div class="info">${[['客戶發票抬頭',p.title],['統編',p.taxid],['未稅總額',f$(p.net)],['含稅總額',f$(p.gross)],['合約正本',p.contract],['本票',p.promissory],['新增日期',p.date],['接案日期',p.signDate],['已收款已沖預收',p.offset=='是'?'是':'否'],['結案日期',p.closeDate],['工程險保單資訊',p.insurance],['備註',p.remark]].map(x=>`<div><span>${x[0]}</span>${e(x[1])||'－'}</div>`).join('')}</div></div>
   <div class="panel p-inst"><h3>款項分期<span class="sp"></span><button class="sm" onclick="editI('${p.id}')">＋ 新增分期</button></h3><div class="sc"><table><tr><th>款項進度</th><th>發票日期</th><th>發票號碼</th><th class="n">未稅金額</th><th class="n">5% 稅額</th><th class="n">總額</th><th>傳票資訊</th><th>備註</th><th></th></tr>
   ${I.map(i=>`<tr><td>${e(i.progress)}</td><td>${e(i.invDate)}</td><td>${e(i.invNo)}</td><td class="n">${f$(i.net)}</td><td class="n">${f$(i.tax)}</td><td class="n">${f$(i.total)}</td><td>${e(i.voucher)}</td><td>${i.remark?`<button class="sm ghost" onclick="viewRemark('Installments','${i.id}')">檢視</button>`:''}</td><td><button class="ghost sm" onclick="editI('${p.id}','${i.id}')">編輯</button> <button class="del sm" onclick="rm('Installments','${i.id}')">刪除</button></td></tr>`).join('')||'<tr><td colspan="9">尚未設定分期</td></tr>'}${I.length?`<tr class="tot"><td colspan="3">合計（${I.length} 期）</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.net),0))}</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.tax),0))}</td><td class="n">${f$(I.reduce((t,i)=>t+n0(i.total),0))}</td><td colspan="3"></td></tr>`:''}</table></div></div>
   <div class="panel p-pay"><h3>收款紀錄<span class="sp"></span><button class="sm" onclick="editY('${p.id}')">＋ 新增收款</button></h3><div class="sc"><table><tr><th>收款日期</th><th>付款方式</th><th>對應發票</th><th>支票資訊／銀行分行</th><th>傳票號碼</th><th class="n">收款金額</th><th>備註</th><th></th></tr>
@@ -290,7 +294,8 @@ function detail(){
 function closeM(){$('#modal').hidden=true}
 function form(title,F,v,onSave,hook){
   const opt=o=>Array.isArray(o)?`<option value="${e(o[0])}">${e(o[1])}</option>`:`<option>${e(o)}</option>`;
-  $('#modal').innerHTML=`<div class="box"><h3>${title}</h3><div class="grid">${F.map(f=>`<label class="${f.w?'w':''}" data-k="${f.k}">${f.l}${f.r?' *':''}${f.t=='select'?`<select id="f_${f.k}">${f.o.map(opt).join('')}</select>`:f.t=='area'?`<textarea id="f_${f.k}" rows="2"></textarea>`:`<input id="f_${f.k}" type="${f.t||'text'}" ${f.t=='number'?'step="any"':''}>`}</label>`).join('')}</div>
+  const fl=f=>`<label class="${f.w?'w':''}${f.fill?' fx':''}" data-k="${f.k}">${f.l}${f.r?' *':''}${f.t=='select'?`<select id="f_${f.k}">${f.o.map(opt).join('')}</select>`:f.t=='area'?`<textarea id="f_${f.k}" rows="2"></textarea>`:`<input id="f_${f.k}" type="${f.t||'text'}" ${f.t=='number'?'step="any"':''}>`}</label>`;
+  $('#modal').innerHTML=`<div class="box${F.some(f=>f.fill)?' fill':''}"><h3>${title}</h3><div class="grid">${F.filter(f=>!f.fill).map(fl).join('')}</div>${F.filter(f=>f.fill).map(fl).join('')}
   <div class="bar"><button class="ghost" onclick="closeM()">取消</button><button id="ok">儲存</button></div></div>`;
   $('#modal').hidden=false;
   F.forEach(f=>$('#f_'+f.k).value=v[f.k]??'');
@@ -306,7 +311,8 @@ function editP(id){
     {k:'title',l:'客戶發票抬頭',r:1},{k:'taxid',l:'統編'},
     {k:'net',l:'未稅總額',t:'number',r:1},{k:'gross',l:'含稅總額（可手動修改）',t:'number',r:1},
     {k:'contract',l:'是否已收合約正本',t:'select',o:['否','是']},{k:'promissory',l:'是否有開立本票',t:'select',o:['否','是']},
-    {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註',t:'area',w:1},{k:'date',l:'新增日期',t:'date'}],
+    {k:'date',l:'新增日期',t:'date'},{k:'signDate',l:'接案日期',t:'date'},
+    {k:'insurance',l:'工程險保單資訊',t:'area',w:1},{k:'remark',l:'備註（剩餘空間皆用於顯示備註）',t:'area',w:1,fill:1}],
     v,g=>save('Projects',{...(byId(id)||{}),...g,id:id||uid('P')}).then(()=>toast(id?'✅ 已儲存':'✨ 新增成功！')),(g,k,set)=>{if(k=='net')set('gross',Math.round(n0(g.net)*1.05))})}
 
 function viewRemark(sh,id){
@@ -340,7 +346,7 @@ function setup(){
 function exportXls(){
   const pn=id=>(D.Projects.find(p=>p.id==id)||{}).name||'',inv=id=>(D.Installments.find(i=>i.id==id)||{}).invNo||'';
   const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(a),n);
-  add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,'已收金額(未稅)':statNet(p).r,'未收金額(未稅)':statNet(p).u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
+  add('工案總表',D.Projects.map(p=>{const s=stat(p);return{新增日期:p.date,接案日期:p.signDate||'',類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,統編:p.taxid,未稅總額:n0(p.net),含稅總額:s.t,已收總額:s.r,未收總額:s.u,'已收金額(未稅)':statNet(p).r,'未收金額(未稅)':statNet(p).u,已收合約正本:p.contract,開立本票:p.promissory,工程險保單:p.insurance,備註:p.remark,已收款已沖預收:p.offset=='是'?'是':'否',結案日期:p.closeDate||''}}));
   add('分期明細',D.Installments.map(i=>({工案名稱:pn(i.pid),款項進度:i.progress||'',發票日期:i.invDate,發票號碼:i.invNo,未稅金額:n0(i.net),稅額:n0(i.tax),總額:n0(i.total),傳票資訊:i.voucher,備註:i.remark||''})));
   add('收款紀錄',D.Payments.map(y=>({工案名稱:pn(y.pid),收款日期:y.date,付款方式:y.method,對應發票:inv(y.iid),支票資訊:y.check,銀行:y.bank,分行:y.branch,傳票號碼:y.voucher,收款金額:n0(y.amount),備註:y.remark||''})));
   const dep=D.Projects.filter(p=>!p.closeDate&&p.offset!='是').sort((x,y)=>y.date.localeCompare(x.date)).map(p=>{const s=statNet(p);return{新增日期:p.date,類別:p.cat,接案公司:p.company,工案名稱:p.name,客戶發票抬頭:p.title,未稅總額:s.t,'已收金額(未稅)':s.r,'未收金額(未稅)':s.u}});
