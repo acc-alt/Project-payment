@@ -151,6 +151,23 @@ const stat=p=>{const r=pays(p.id).reduce((s,y)=>s+n0(y.amount),0);return{t:n0(p.
 
 /* ---------- 版面 ---------- */
 function setTheme(t){document.body.dataset.theme=t;cfg={...cfg,theme:t};localStorage.setItem('cfg',JSON.stringify(cfg))}
+function fireworks(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=document.createElement('canvas'),d=devicePixelRatio||1,W=innerWidth,H=innerHeight;
+  c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70';c.width=W*d;c.height=H*d;document.body.appendChild(c);
+  const x=c.getContext('2d'),K=['#ff5a5f','#ffb400','#2ecc71','#3da5ff','#c77dff','#ffffff'];x.scale(d,d);
+  let P=[],last=0;const t0=performance.now();
+  const burst=()=>{const cx=W*(.15+Math.random()*.7),cy=H*(.15+Math.random()*.4),col=K[Math.random()*K.length|0];
+    for(let i=0;i<80;i++){const a=Math.PI*2*i/80,v=2+Math.random()*4;P.push({x:cx,y:cy,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:1,c:Math.random()<.3?K[Math.random()*K.length|0]:col})}};
+  (function f(now){
+    if(now-t0<1800&&now-last>350){burst();last=now}
+    x.globalCompositeOperation='destination-out';x.fillStyle='rgba(0,0,0,.2)';x.fillRect(0,0,W,H);
+    x.globalCompositeOperation='lighter';
+    P=P.filter(p=>p.l>.02);
+    P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vx*=.97;p.vy=p.vy*.97+.06;p.l-=.012;x.globalAlpha=p.l;x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,2.4,0,7);x.fill()});
+    x.globalAlpha=1;
+    now-t0<1800||P.length?requestAnimationFrame(f):c.remove()})(performance.now());
+}
 function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
 function go(t){tab=t;cur=null;show()}
 function show(){
@@ -163,7 +180,7 @@ function card(t,v,cls=''){const em=/未收/.test(t)?'⏳':/已收/.test(t)?'✅'
 const act=p=>`<td onclick="event.stopPropagation()"><label style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;margin-right:6px"><input type="checkbox" style="width:auto" ${p.offset=='是'?'checked':''} onchange="toggleOff('${p.id}')">已收款已沖預收</label> <button class="sm" onclick="closeP('${p.id}')">結案</button></td>`;
 const byId=id=>D.Projects.find(x=>x.id==id);
 function toggleOff(id){const p=byId(id);save('Projects',{...p,offset:p.offset=='是'?'':'是'})}
-function closeP(id){const p=byId(id);form('結案：'+e(p.name),[{k:'closeDate',l:'結案日期',t:'date',r:1}],{closeDate:today()},g=>save('Projects',{...p,closeDate:g.closeDate}).then(()=>toast('🎉 恭喜結案！')))}
+function closeP(id){const p=byId(id);form('結案：'+e(p.name),[{k:'closeDate',l:'結案日期',t:'date',r:1}],{closeDate:today()},g=>save('Projects',{...p,closeDate:g.closeDate}).then(()=>{fireworks();toast('🎉 恭喜結案！')}))}
 function reopen(id){confirm('要取消結案，並移回工案列表嗎？')&&save('Projects',{...byId(id),closeDate:''})}
 const pickCo=i=>{selCo=selCo==i?-1:i;show()};
 
